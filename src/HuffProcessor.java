@@ -60,6 +60,8 @@ public class HuffProcessor {
 		
 		in.reset();
 		writeCompressedBits(codings, in, out);
+		String code = codings[PSEUDO_EOF];
+		out.writeBits(code.length(), Integer.parseInt(code, 2));
 		out.close();
 	}
 	private void writeCompressedBits(String[] codings, BitInputStream in, BitOutputStream out) {
@@ -73,12 +75,7 @@ public class HuffProcessor {
 				out.writeBits(code.length(), Integer.parseInt(code, 2));
 			}
 		}
-		String code = codings[PSEUDO_EOF];
-		if(code == null) {
-			System.out.println("code is null");
-		}
-		System.out.println(code.length());
-		out.writeBits(code.length(), Integer.parseInt(code, 2));
+		
 	}
 
 	private void writeHeader(HuffNode root, BitOutputStream out) {
@@ -87,11 +84,12 @@ public class HuffProcessor {
 		HuffNode current = root;
 		
 		if(current.myLeft == null && current.myRight == null) {
-			out.writeBits(2+BITS_PER_WORD, Integer.parseInt("1" + current.myValue));
+			out.writeBits(1, 1);
+			out.writeBits(1+BITS_PER_WORD, current.myValue);
 		}else {
+			out.writeBits(1, 0);
 			if(root.myLeft!=null) writeHeader(current.myLeft, out);
 			if(root.myRight!=null) writeHeader(current.myRight, out);
-			out.writeBits(1, 0);
 		}
 		
 	}
@@ -130,7 +128,9 @@ public class HuffProcessor {
 			if(freq[index] > 0) {
 				pq.add(new HuffNode(index, freq[index], null, null));
 			}
-			
+		}
+		if(myDebugLevel >= DEBUG_HIGH) {
+			System.out.printf("pq created with %d nodes\n", pq.size());
 		}
 		//System.out.println(pq.size());
 		while(pq.size() > 1) {
